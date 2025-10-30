@@ -1,16 +1,14 @@
 from enum import Enum
 
 class TextType(Enum):
-
-    NORMAL = "normal"
+    TEXT = "text"
     BOLD = "bold"
     ITALIC = "italic"
-    CODE_TEXT = "code text"
+    CODE = "code"
     LINK = "link"
     IMAGE = "image"
 
 class TextNode():
-
     def __init__(self, text, text_type, url=None):
         self.text = text
         self.text_type = text_type
@@ -20,8 +18,16 @@ class TextNode():
         if not isinstance(other, TextNode):
             return False
         return (self.text == other.text and
-        self.text_type == other.text_type and
-        self.url == other.url)
+                self.text_type == other.text_type and
+                self.url == other.url)
 
     def __repr__(self):
         return f"TextNode({self.text}, {self.text_type.value}, {self.url})"
+
+class BlockType(Enum):
+    HEADING = "heading"
+    CODE = "code"
+    QUOTE = "quote"
+    UNORDERED_LIST = "unordered_list"
+    ORDERED_LIST = "ordered_list"
+    PARAGRAPH = "paragraph"
