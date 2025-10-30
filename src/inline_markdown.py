@@ -1,6 +1,7 @@
 import re
 from textnode import TextNode, TextType, BlockType
 from htmlnode import HTMLNode, ParentNode, LeafNode, text_node_to_html_node
+import unittest
 
 IMAGE_PATTERN = r"!\[([^\[\]]*)\]\(((?:[^()]|\([^\)]*\))*)\)"
 LINK_PATTERN  = r"(?<!!)\[([^\[\]]*)\]\(((?:[^()]|\([^\)]*\))*)\)"
@@ -185,7 +186,14 @@ def block_to_block_type(block):
         return BlockType.HEADING
 
     # Quote block
-    if len(lines) > 0 and all(re.match(r"^> .+", line) for line in lines):
+    #if len(lines) > 0 and all(re.match(r"^> .+", line) for line in lines):
+    #    return BlockType.QUOTE
+    is_quote = True
+    for line in lines:
+        if line.strip() and not line.startswith(">"):
+            is_quote = False
+            break
+    if is_quote and len(lines) > 0:
         return BlockType.QUOTE
 
     # Unordered list
@@ -237,7 +245,8 @@ def markdown_to_html_node(markdown):
             children.append(ParentNode("pre", [LeafNode("code", code_text)]))
         elif block_type == BlockType.QUOTE:
             lines = block.splitlines()
-            text = " ".join([line[2:] for line in lines])
+            #text = " ".join([line[2:] for line in lines])
+            text = "<br/>".join([line[2:].strip() for line in lines])
             children.append(ParentNode("blockquote", text_to_children(text)))
         elif block_type == BlockType.UNORDERED_LIST:
             list_items = []
@@ -253,7 +262,25 @@ def markdown_to_html_node(markdown):
             children.append(ParentNode("ol", list_items))
         else:  # Paragraph
             text = block.replace('\n', ' ')
-            text = "".join(text.split())
             children.append(ParentNode("p", text_to_children(text)))
 
     return ParentNode("div", children)
+
+def extract_title(markdown):
+    """
+    Extracts the h1 header from a markdown string.
+
+    Args:
+        markdown: The markdown string to extract the title from.
+
+    Returns:
+        The title string, stripped of the '#' and any leading/trailing whitespace.
+
+    Raises:
+        ValueError: If no h1 header is found.
+    """
+    match = re.match(r"^#\s+(.+)", markdown, re.MULTILINE)
+    if match:
+        return match.group(1).strip()
+    else:
+        raise ValueError("No h1 header found")

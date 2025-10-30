@@ -1,5 +1,5 @@
 import unittest
-from inline_markdown import extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link, text_to_textnodes, markdown_to_blocks, block_to_block_type, markdown_to_html_node, text_to_children
+from inline_markdown import extract_title, extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link, text_to_textnodes, markdown_to_blocks, block_to_block_type, markdown_to_html_node, text_to_children
 from textnode import TextNode, TextType, BlockType
 from htmlnode import HTMLNode, ParentNode, LeafNode, text_node_to_html_node
 import re
@@ -20,6 +20,29 @@ the **same** even with inline stuff
     print(f"Actual HTML: {html!r}")
     expected_html = '<div><pre><code >This is text that _should_ remain\nthe **same** even with inline stuff\n</code></pre></div>'
     self.assertEqual(normalize_whitespace(html), normalize_whitespace(expected_html))
+
+class TestExtractTitle(unittest.TestCase):
+
+    def test_extract_title_valid(self):
+        self.assertEqual(extract_title("# Hello"), "Hello")
+        self.assertEqual(extract_title("#  Hello  "), "Hello")
+        self.assertEqual(extract_title("# Hello world"), "Hello world")
+        self.assertEqual(extract_title("#  Hello world  "), "Hello world")
+        self.assertEqual(extract_title("#\tHello"), "Hello")
+
+    def test_extract_title_no_h1(self):
+        with self.assertRaises(ValueError):
+            extract_title("## Hello")
+        with self.assertRaises(ValueError):
+            extract_title("Hello")
+        with self.assertRaises(ValueError):
+            extract_title("")
+        with self.assertRaises(ValueError):
+            extract_title("  # Hello")
+
+    def test_extract_title_multiline(self):
+         self.assertEqual(extract_title("""# Hello
+         Other stuff"""), "Hello")
 
 class TestInlineDelimiter(unittest.TestCase):
     # Tests for extract_markdown_images
