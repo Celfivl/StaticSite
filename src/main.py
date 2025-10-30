@@ -1,6 +1,8 @@
+from textnode import TextNode, TextType
 import os
 import shutil
 from inline_markdown import markdown_to_html_node, extract_title  # Import from inline_markdown
+import sys
 
 def recursive_copy(source_dir, dest_dir):
     """
@@ -31,7 +33,7 @@ def recursive_copy(source_dir, dest_dir):
             recursive_copy(source_item, dest_item)
 
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, basepath):
     """
     Generates an HTML page from a markdown file, a template, and a destination path.
 
@@ -39,8 +41,9 @@ def generate_page(from_path, template_path, dest_path):
         from_path: Path to the markdown file.
         template_path: Path to the HTML template file.
         dest_path: Path to write the generated HTML file.
+        basepath: The base path for the site (e.g., "/", "/blog").
     """
-    print(f"Generating page from {from_path} to {dest_path} using {template_path}")
+    print(f"Generating page from {from_path} to {dest_path} using {template_path} with basepath {basepath}")
 
     # Read the markdown file
     try:
@@ -84,6 +87,11 @@ def generate_page(from_path, template_path, dest_path):
         print(f"Error replacing placeholders in template: {e}")
         return
 
+    # Replace href="/ and src="/ with href="{basepath} and src="{basepath}
+    output_content = output_content.replace('href="/', f'href="{basepath}')
+    output_content = output_content.replace('src="/', f'src="{basepath}')
+
+
     # Write the output to the destination file
     try:
         # Create any necessary directories
@@ -97,16 +105,17 @@ def generate_page(from_path, template_path, dest_path):
 
     print(f"Successfully generated page at {dest_path}")
 
-def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, basepath):
     """
     Crawls the content directory and generates a new .html file for each markdown file,
-    using the specified template. The generated pages are written to the public directory
+    using the specified template. The generated pages are written to the docs directory
     in the same directory structure.
 
     Args:
         dir_path_content: Path to the content directory containing markdown files.
         template_path: Path to the HTML template file.
-        dest_dir_path: Path to the destination directory (e.g., "public").
+        dest_dir_path: Path to the destination directory (e.g., "docs").
+        basepath: The base path for the site (e.g., "/", "/blog").
     """
 
     for root, _, files in os.walk(dir_path_content):
@@ -118,25 +127,31 @@ def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
                 # Calculate the relative path from the content directory
                 relative_path = os.path.relpath(md_file_path, dir_path_content)
 
-                # Construct the destination path in the public directory
+                # Construct the destination path in the docs directory
                 html_file_name = os.path.splitext(relative_path)[0] + ".html"
                 html_dest_path = os.path.join(dest_dir_path, html_file_name)
 
                 # Generate the page
-                generate_page(md_file_path, template_path, html_dest_path)
+                generate_page(md_file_path, template_path, html_dest_path, basepath)
 
 
 def main():
-    # Delete anything in the public directory
-    if os.path.exists("public"):
-        print("Deleting existing public directory")
-        shutil.rmtree("public")
+    # Get the basepath from the command line arguments
+    if len(sys.argv) > 1:
+        basepath = sys.argv[1]
+    else:
+        basepath = "/"
 
-    # Copy all the static files from static to public
-    recursive_copy("static", "public")
+    # Delete anything in the docs directory
+    if os.path.exists("docs"):
+        print("Deleting existing docs directory")
+        shutil.rmtree("docs")
+
+    # Copy all the static files from static to docs
+    recursive_copy("static", "docs")
 
     # Generate pages recursively
-    generate_pages_recursive("content", "template.html", "public")
+    generate_pages_recursive("content", "template.html", "docs", basepath)
 
 
 if __name__ == "__main__":
